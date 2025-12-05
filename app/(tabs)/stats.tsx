@@ -1,9 +1,12 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Dimensions, Pressable, TextInput, Platform, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Path, Line, Circle, Rect } from 'react-native-svg';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 
 import { NeonCard } from '../../src/components/NeonCard';
+import { exportData, updateUserStats, getUserStats } from '../../src/db/db';
 
 const { width } = Dimensions.get('window');
 
@@ -11,10 +14,58 @@ const MOCK_DATA_MURPH = [30, 35, 40, 35, 45, 50, 55, 60];
 const MOCK_DATA_VOLUME = [12, 15, 18, 10, 22, 25, 28]; // Weekly volume arbitrary units
 
 export default function StatsScreen() {
+    const [weight, setWeight] = useState('');
+
+    const handleUpdateWeight = async () => {
+        if (!weight) return;
+        await updateUserStats({ weight: parseFloat(weight) });
+        setWeight('');
+        alert("Bodyweight logged!");
+    };
+
+    const handleExport = async () => {
+        const data = await exportData();
+        if (Platform.OS === 'web') {
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `murph-forge-export-${Date.now()}.json`;
+            a.click();
+        } else {
+            const uri = FileSystem.documentDirectory + 'murph_export.json';
+            await FileSystem.writeAsStringAsync(uri, data);
+            await Sharing.shareAsync(uri);
+        }
+    };
+
     return (
         <SafeAreaView style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                <Text style={styles.title}>PERFORMANCE DATA</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={styles.title}>PERFORMANCE DATA</Text>
+                    <Pressable onPress={handleExport} style={styles.exportBtn}>
+                        <Text style={styles.exportText}>EXPORT DATA</Text>
+                    </Pressable>
+                </View>
+
+                {/* Weight Tracker */}
+                <NeonCard style={styles.chartCard} glowColor="#FFF">
+                    <Text style={styles.chartTitle}>BODY METRICS</Text>
+                    <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center', marginTop: 10 }}>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Current Weight (kg)"
+                            placeholderTextColor="#666"
+                            keyboardType="numeric"
+                            value={weight}
+                            onChangeText={setWeight}
+                        />
+                        <Pressable onPress={handleUpdateWeight} style={styles.updateBtn}>
+                            <Text style={styles.btnText}>LOG</Text>
+                        </Pressable>
+                    </View>
+                </NeonCard>
 
                 <NeonCard style={styles.chartCard} intensity="high" glowColor="#00F0FF">
                     <Text style={styles.chartTitle}>MURPH PROGRESSION (%)</Text>
@@ -134,5 +185,32 @@ const styles = StyleSheet.create({
         height: 160,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    exportBtn: {
+        backgroundColor: '#333',
+        padding: 8,
+        borderRadius: 8,
+        marginBottom: 20
+    },
+    exportText: {
+        color: '#00F0FF',
+        fontWeight: 'bold',
+        fontSize: 10
+    },
+    input: {
+        backgroundColor: '#333',
+        color: 'white',
+        padding: 12,
+        borderRadius: 8,
+        flex: 1
+    },
+    updateBtn: {
+        backgroundColor: '#00F0FF',
+        padding: 12,
+        borderRadius: 8
+    },
+    btnText: {
+        fontWeight: 'bold',
+        color: 'black'
     }
 });

@@ -1,5 +1,5 @@
 import { WorkoutLog, UserStats } from '../db/schema';
-import { runQuery } from '../db/db';
+import { getLogs, getUserStats } from '../db/db';
 
 export interface WeeklyRecommendation {
     murph_target_percent: number;
@@ -13,7 +13,8 @@ export interface WeeklyRecommendation {
 
 export const analyzeAndRecommend = async (): Promise<WeeklyRecommendation> => {
     // 1. Fetch last week's logs (Mocked for now as we don't have real data yet)
-    const logs = await runQuery(`SELECT * FROM workout_logs WHERE date >= date('now', '-7 days')`) as WorkoutLog[];
+    const allLogs = await getLogs();
+    const logs = allLogs.filter(l => new Date(l.date) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
 
     // 2. Calculate fatigue
     const avgFatigue = logs.reduce((acc, log) => acc + (log.fatigue_score || 5), 0) / (logs.length || 1);

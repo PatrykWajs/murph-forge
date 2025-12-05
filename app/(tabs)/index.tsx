@@ -11,7 +11,7 @@ import { ProgressRing } from '../../src/components/ProgressRing';
 import { analyzeAndRecommend, WeeklyRecommendation } from '../../src/lib/recommendations';
 
 const SCHEDULE = [
-    "Rest / Full Recovery", // 0 Sun
+    "Freediving / Apnea Training", // 0 Sun
     "Scaled Murph (Bodyweight)", // 1 Mon
     "Heavy Day: Deadlift + Pull", // 2 Tue
     "Scaled Murph / Active Recovery", // 3 Wed
